@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlazorChatWeb</title>
+    <base href="/" />
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="BlazorChatWeb.styles.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+    <script src="lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.getScrollTop = function (element) {
+            if (!element) { return 0; }
+            return Math.floor(element.scrollTop);
+        };
+
+        window.getScrollHeight = function (element) {
+            return element?.scrollHeight || 0;
+        };
+
+        window.scrollToBottom = function (element) {
+            if (!element) { return; }
+            element.scrollTop = element.scrollHeight;
+        };
+
+        window.scrollToPosition = function (element, position) {
+            if (!element) { return; }
+            element.scrollTop = position;
+        };
+
+        window.isScrolledToBottom = function (element) {
+            if (!element) { return true; }
+            return element.scrollTop + element.clientHeight >= element.scrollHeight - 1;
+        };
+    </script>
+    <script>
+        window.modalHelper = {
+            showModal: function (element) {
+                if (!element) {
+                    console.error("showModal: element is null or undefined.");
+                    return;
+                }
+
+                var modal = bootstrap.Modal.getOrCreateInstance(element);
+                modal.show();
+            },
+            hideModal: function (element) {
+                if (!element) {
+                    console.error("hideModal: element is null or undefined.");
+                    return;
+                }
+
+                var modal = bootstrap.Modal.getOrCreateInstance(element);
+                modal.hide();
+            }
+        };
+    </script>
+    <script src="_framework/blazor.webassembly.js"></script>
+
+</body>
+
+</html>

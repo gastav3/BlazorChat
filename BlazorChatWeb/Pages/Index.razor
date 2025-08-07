@@ -1,0 +1,30 @@
+﻿@page "/"
+
+<h2>Available Chat Lobbies</h2>
+
+@if (rooms != null)
+{
+    <input @bind="newRoomName" placeholder="lobby name" />
+    <button @onclick="() => CreateRoom()">Create</button>
+}
+
+@if (rooms == null)
+{
+    <p><em>Loading lobbies...</em></p>
+}
+else if (!rooms.Any())
+{
+    <p>No lobbies available right now.</p>
+}
+else
+{
+    <ul>
+        @foreach (var lobby in rooms)
+        {
+            <li>
+                <strong>@lobby.Name</strong> (@lobby.Id)
+                <button @onclick="() => JoinRoom(lobby.Id)">Join</button>
+            </li>
+        }
+    </ul>
+}

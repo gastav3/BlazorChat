@@ -1,0 +1,33 @@
+﻿@page "/modal-example"
+@using BlazorChatWeb.Components
+@inject IJSRuntime JS
+
+<h3>Modal Example</h3>
+
+<button class="btn btn-primary" @onclick='async () => await ShowModal("example@user.com")'>Open Modal</button>
+
+
+
+
+
+<CreateRoomModalComponent @ref="Modal" Title="Send Message" OnSubmit="OnModalSubmit" />
+
+@code {
+    private CreateRoomModalComponent? Modal;
+
+    public async Task ShowModal(string recipient = "")
+    {
+        if (Modal != null)
+        {
+            Modal.Recipient = recipient;
+            Modal.Message = "";
+            await Modal.ShowAsync();
+        }
+    }
+
+    private void OnModalSubmit((string Recipient, string Message) data)
+    {
+        Console.WriteLine($"Sent message to {data.Recipient}: {data.Message}");
+        // Handle submitted data as needed
+    }
+}

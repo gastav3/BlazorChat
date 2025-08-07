@@ -1,0 +1,78 @@
+﻿@inject IJSRuntime JS
+
+<div class="modal fade" id="@ModalId" tabindex="-1" aria-labelledby="@ModalLabelId" aria-hidden="true" @ref="ModalElement">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="@ModalLabelId">@Title</h5>
+                <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@this" OnValidSubmit="HandleSubmit">
+                    <div class="mb-3">
+                        <label for="recipient-name" class="col-form-label">Recipient:</label>
+                        <InputText id="recipient-name" class="form-control" @bind-Value="Recipient" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="message-text" class="col-form-label">Message:</label>
+                        <InputTextArea id="message-text" class="form-control" @bind-Value="Message" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send message</button>
+                </EditForm>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string ModalId { get; set; } = "exampleModal";
+    [Parameter] public string ModalLabelId { get; set; } = "Label";
+    [Parameter] public string Title { get; set; } = "New message";
+    [Parameter] public EventCallback<(string Recipient, string Message)> OnSubmit { get; set; }
+
+    public string Recipient { get; set; } = "";
+    public string Message { get; set; } = "";
+
+    private ElementReference ModalElement;
+    private bool _isRendered = false;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isRendered = true;
+        }
+    }
+
+    public async Task ShowAsync()
+    {
+        if (_isRendered)
+        {
+            await JS.InvokeVoidAsync("modalHelper.showModal", ModalElement);
+        }
+        else
+        {
+            Console.Error.WriteLine("Modal not yet rendered.");
+        }
+    }
+
+    public async Task CloseModal()
+    {
+        if (_isRendered)
+        {
+            await JS.InvokeVoidAsync("modalHelper.hideModal", ModalElement);
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (OnSubmit.HasDelegate)
+        {
+            await OnSubmit.InvokeAsync((Recipient, Message));
+        }
+        await CloseModal();
+    }
+}

@@ -1,0 +1,22 @@
+﻿@using BlazorChatShared.Models.Models
+@using BlazorChatWeb.StateServices
+@inherits LayoutComponentBase
+@inject IRoomState RoomState
+
+<CascadingValue Value="SelectedRoom">
+    <div class="page">
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+
+        <main>
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    </div>
+</CascadingValue>
+
+@code {
+    public Room? SelectedRoom => RoomState.SelectedRoom;
+}

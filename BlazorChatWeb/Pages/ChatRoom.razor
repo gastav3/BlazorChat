@@ -1,0 +1,35 @@
+﻿@page "/chat/{Id}"
+
+<div class="chat-page">
+    @if (LoadedRoom != null)
+    {
+        <div class="chat-container">
+            <h3>@(LoadedRoom.Name ?? "Invalid room name")</h3>
+            <input @bind="message.User" placeholder="Your name" class="chat-input" />
+
+            <div @ref="messageListDiv" class="message-list" @onscroll="OnScrollAsync">
+                <ul>
+                    @foreach (var msg in messages.OrderBy(x => x.Timestamp))
+                    {
+                        <li class="message-item">
+                            <b>@msg.User</b>: @msg.Message
+                            <span class="message-timestamp">
+                                @(msg.Timestamp.ToLocalTime().ToString("HH:mm"))
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <div class="message-controls">
+                <textarea @bind="message.Message"
+                          @onkeydown="HandleKeyPress"
+                          placeholder="Type your message..."
+                          rows="2"
+                          class="message-textarea"></textarea>
+
+                <button @onclick="ClickSend" class="send-button">Send</button>
+            </div>
+        </div>
+    }
+</div>
