@@ -1,4 +1,7 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using BlazorChatWeb.Components
+
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">BlazorChatWeb</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -9,35 +12,37 @@
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="nav flex-column">
+        <CreateRoomModalComponent @ref="Modal" Title="Create Chat room" Description=""  OnSubmit="OnRoomCreateModalSubmit" />
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                <span class="bi bi-chat-left-dots" aria-hidden="true"></span> Rooms
             </NavLink>
         </div>
 
-        @if (rooms == null)
+        <button class="btn btn-primary" @onclick='async () => await ShowModal()'>New chat room</button>
+
+        @if (visitedRooms == null)
         {
             <p><em>Loading lobbies...</em></p>
         }
-        else if (!rooms.Any())
+        else if (!visitedRooms.Any())
         {
             <p>No lobbies available right now.</p>
         }
         else
         {
             <ul>
-                @foreach (var lobby in rooms)
+                @foreach (var room in visitedRooms)
                 {
                     <div class="nav-item px-3">
-                        <a class="nav-link @(lobby.Id == SelectedRoom?.Id ? "active" : "")"
-                           @onclick="@(() => JoinRoom(lobby.Id))">
-                            <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> @lobby.Name
+                        <a class="nav-link @(room.Id == SelectedRoom?.Id ? "active" : "")"
+                           @onclick="@(() => JoinRoom(room.Id))">
+                            <span class="bi bi-chat-dots" aria-hidden="true"></span> @room.Name
                         </a>
                     </div>
                 }
             </ul>
 
         }
-
     </nav>
 </div>

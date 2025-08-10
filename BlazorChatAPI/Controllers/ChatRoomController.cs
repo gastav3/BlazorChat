@@ -26,6 +26,7 @@ public class ChatRoomController : ControllerBase
         {
             Id = request.Id,
             Name = request.Name,
+            Description = request.Description
         };
 
         var createdRoom = await _roomService.CreateRoom(roomEntity);
@@ -37,7 +38,7 @@ public class ChatRoomController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<Room>>> GetAllRooms()
     {
-        var roomsEntity = await _roomService.GetAllRooms();
+        var roomsEntity = await _roomService.GetAllRooms(true);
         var rooms = _autoMapper.Map<IEnumerable<Room>>(roomsEntity);
         return Ok(rooms);
     }
@@ -45,7 +46,7 @@ public class ChatRoomController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Room>> GetRoomById(string id)
     {
-        var roomEntity = await _roomService.GetRoomById(id);
+        var roomEntity = await _roomService.GetRoomById(id, true);
         var room = _autoMapper.Map<Room>(roomEntity);
 
         if (room == null)

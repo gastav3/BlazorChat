@@ -8,7 +8,9 @@ public interface IChatHubService
 {
     HubConnection? Connection { get; }
     event Func<ChatMessage, Task>? OnMessageReceived;
+    event Func<Room, Task>? OnRoomReceived;
     Task StartConnection(string hubUrl);
     Task SendMessage(ChatMessage msg);
+    Task RequestUpdate(string roomId);
     Task<PagedMessagesResultParameter?> LoadMessages(string roomId, int currentPage, int pageSize);
 }

@@ -122,11 +122,9 @@ code {
 
 
 
-
-
-
-
-
+.modal-backdrop {
+    position: unset;
+}
 
 
 

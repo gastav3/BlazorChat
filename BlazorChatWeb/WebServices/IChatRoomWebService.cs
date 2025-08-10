@@ -5,7 +5,7 @@ namespace BlazorChatWeb.WebServices;
 
 public interface IChatRoomWebService
 {
-    Task<List<Room>> GetAllRoomsAsync();
-    Task<Room?> GetRoomByIdAsync(string id);
-    Task<Room?> CreateRoomAsync(CreateRoomParameter request);
+    Task<List<Room>> GetAllRooms();
+    Task<Room?> GetRoomById(string id);
+    Task<Room?> CreateRoom(CreateRoomParameter request);
 }

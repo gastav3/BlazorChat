@@ -1,11 +1,12 @@
 ﻿using AutoMapper;
 using BlazorChatAPI.Repositories;
 using BlazorChatAPI.Services;
+using BlazorChatAPI.State;
+using BlazorChatShared.Constants;
 using BlazorChatShared.Models.Entities;
 using BlazorChatShared.Models.Models;
 using BlazorChatShared.Parameters;
 using Microsoft.AspNetCore.SignalR;
-using System.Collections.Concurrent;
 
 namespace BlazorChatAPI.Hubs;
 
@@ -14,21 +15,21 @@ public class ChatHub : Hub<IChatHub>
     private readonly IMapper _autoMapper;
     private readonly IChatService _chatService;
     private readonly IRoomService _roomService;
+    private readonly IRoomState _roomState;
 
-    // user - rooms (thread-safe)
-    private static readonly ConcurrentDictionary<string, HashSet<string>> _connectionRooms = new();
-    private static readonly string[] defaultRooms = { "main_room, notification_room" };
-
-    public ChatHub(IMapper autoMapper, IChatService chatService, IRoomService roomService)
+    public ChatHub(IMapper autoMapper, IChatService chatService, IRoomService roomService, IRoomState roomState)
     {
         _autoMapper = autoMapper ?? throw new ArgumentNullException(nameof(autoMapper));
         _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
         _roomService = roomService ?? throw new ArgumentNullException(nameof(roomService));
+        _roomState = roomState ?? throw new ArgumentNullException(nameof(roomState));
     }
 
     public override async Task OnConnectedAsync()
     {
-        // Optional: Log connection
+        _roomState.AddConnection(Context.ConnectionId, ChatConstants.MainRoomId.ToString());
+        await Groups.AddToGroupAsync(Context.ConnectionId, ChatConstants.MainRoomId.ToString());
+        await UpdateRoomInfo(ChatConstants.MainRoomId.ToString());
         await base.OnConnectedAsync();
     }
 
@@ -46,22 +47,12 @@ public class ChatHub : Hub<IChatHub>
             throw new ArgumentException($"Room with ID {roomId} does not exist.", nameof(roomId));
         }
 
-       await LeaveAllRooms(defaultRooms);
+        await LeaveAllRooms([ChatConstants.MainRoomId.ToString()]);
 
-        // Add to room list
-        _connectionRooms.AddOrUpdate(
-            Context.ConnectionId,
-            _ => new HashSet<string> { roomId },
-            (_, rooms) =>
-            {
-                lock (rooms)
-                {
-                    rooms.Add(roomId);
-                }
-                return rooms;
-            });
-
+        _roomState.AddConnection(Context.ConnectionId, roomId);
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
+
+        await UpdateRoomInfo(roomId);
     }
 
     public async Task LeaveRoom(string roomId)
@@ -72,15 +63,21 @@ public class ChatHub : Hub<IChatHub>
             throw new ArgumentException($"Room with ID {roomId} does not exist.", nameof(roomId));
         }
 
-        if (_connectionRooms.TryGetValue(Context.ConnectionId, out var rooms))
+        _roomState.RemoveConnection(Context.ConnectionId, roomId);
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
+
+        await UpdateRoomInfo(roomId);
+    }
+
+    public async Task UpdateRoom(string roomId)
+    {
+        var room = await _roomService.GetRoomById(roomId, true);
+        if (room == null)
         {
-            lock (rooms)
-            {
-                rooms.Remove(roomId);
-            }
+            throw new ArgumentException($"Room with ID {roomId} does not exist.", nameof(roomId));
         }
 
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomId);
+        await UpdateRoomInfo(roomId);
     }
 
     public async Task<PagedMessagesResultParameter> LoadMessages(string roomId, int pageNumber, int pageSize)
@@ -118,37 +115,32 @@ public class ChatHub : Hub<IChatHub>
         }
     }
 
-    private async Task LeaveAllRooms(IEnumerable<string>? excludeRooms = null)
+    private async Task UpdateRoomInfo(string roomId)
     {
-        excludeRooms ??= [];
+        var connections = _roomState.GetConnectionsInRoom(roomId);
+        var roomEntity = await _roomService.GetRoomById(roomId, true) ?? throw new ArgumentException($"Room with ID {roomId} does not exist.", nameof(roomId));
+        
+        var room = _autoMapper.Map<Room>(roomEntity);
+        room.Connections = [.. connections];
 
-        if (_connectionRooms.TryGetValue(Context.ConnectionId, out var rooms))
-        {
-            List<string> roomsToLeave;
-
-            lock (rooms)
-            {
-                roomsToLeave = rooms
-                    .Where(room => !excludeRooms.Contains(room))
-                    .ToList();
-
-                foreach (var room in roomsToLeave)
-                {
-                    rooms.Remove(room);
-                }
-
-                // Only remove the whole entry if no rooms left
-                if (rooms.Count == 0)
-                {
-                    _connectionRooms.TryRemove(Context.ConnectionId, out _);
-                }
-            }
-
-            foreach (var room in roomsToLeave)
-            {
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, room);
-            }
-        }
+        await Clients.Group(ChatConstants.MainRoomId.ToString()).ReceiveUpdatedRoom(room);
+        await Clients.Group(roomId).ReceiveUpdatedRoom(room);
     }
 
+    private async Task LeaveAllRooms(IEnumerable<string>? excludeRooms = null)
+    {
+        excludeRooms ??= Array.Empty<string>();
+
+        var roomsToLeave = _roomState.GetRooms(Context.ConnectionId)
+            .Where(room => !excludeRooms.Contains(room))
+            .ToList();
+
+        foreach (var room in roomsToLeave)
+        {
+            _roomState.RemoveConnection(Context.ConnectionId, room);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, room);
+
+            await UpdateRoomInfo(room);
+        }
+    }
 }

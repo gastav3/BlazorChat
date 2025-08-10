@@ -13,7 +13,7 @@ public class ChatRoomWebService : IChatRoomWebService
         _httpClient = httpClient;
     }
 
-    public async Task<List<Room>> GetAllRoomsAsync()
+    public async Task<List<Room>> GetAllRooms()
     {
         try
         {
@@ -27,7 +27,7 @@ public class ChatRoomWebService : IChatRoomWebService
         }
     }
 
-    public async Task<Room?> GetRoomByIdAsync(string id)
+    public async Task<Room?> GetRoomById(string id)
     {
         try
         {
@@ -40,7 +40,7 @@ public class ChatRoomWebService : IChatRoomWebService
         }
     }
 
-    public async Task<Room?> CreateRoomAsync(CreateRoomParameter request)
+    public async Task<Room?> CreateRoom(CreateRoomParameter request)
     {
         try
         {

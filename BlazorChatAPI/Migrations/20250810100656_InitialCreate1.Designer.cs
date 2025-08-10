@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BlazorChatAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250720164821_InitialCreate1")]
+    [Migration("20250810100656_InitialCreate1")]
     partial class InitialCreate1
     {
         /// <inheritdoc />
@@ -55,6 +55,12 @@ namespace BlazorChatAPI.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Hidden")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .HasColumnType("text");

@@ -32,7 +32,9 @@ namespace BlazorChatAPI.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: true),
-                    Owner = table.Column<string>(type: "text", nullable: true)
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Owner = table.Column<string>(type: "text", nullable: true),
+                    Hidden = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {

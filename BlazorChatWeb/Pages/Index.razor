@@ -2,29 +2,30 @@
 
 <h2>Available Chat Lobbies</h2>
 
-@if (rooms != null)
-{
-    <input @bind="newRoomName" placeholder="lobby name" />
-    <button @onclick="() => CreateRoom()">Create</button>
-}
-
 @if (rooms == null)
 {
-    <p><em>Loading lobbies...</em></p>
+    <p class="loading-text"><em>Loading lobbies...</em></p>
 }
 else if (!rooms.Any())
 {
-    <p>No lobbies available right now.</p>
+    <p class="empty-text">No lobbies available right now.</p>
 }
 else
 {
-    <ul>
-        @foreach (var lobby in rooms)
+    <p>People online: @GetTotalConnectionCount()</p>
+
+    <ul class="lobby-list">
+        @foreach (var room in rooms)
         {
-            <li>
-                <strong>@lobby.Name</strong> (@lobby.Id)
-                <button @onclick="() => JoinRoom(lobby.Id)">Join</button>
+         if (!room.Hidden) {
+            <li class="lobby-item">
+                <button class="join-button" @onclick="() => JoinRoom(room.Id)">Join</button>
+                <div class="lobby-info">
+                    <strong class="lobby-name">@room.Name</strong>
+                    <span class="lobby-id">@room.Description (@room.Connections.Count())</span>
+                </div>
             </li>
+            }
         }
     </ul>
 }

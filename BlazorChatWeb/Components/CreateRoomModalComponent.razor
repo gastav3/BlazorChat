@@ -1,40 +1,50 @@
-﻿@inject IJSRuntime JS
+﻿@using BlazorChatShared.Models.Models
+@inject IJSRuntime JS
 
-<div class="modal fade" id="@ModalId" tabindex="-1" aria-labelledby="@ModalLabelId" aria-hidden="true" @ref="ModalElement">
+<div class="modal fade" tabindex="-1" aria-hidden="true" @ref="ModalElement">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="@ModalLabelId">@Title</h5>
-                <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+                <h5 class="modal-title">@Title</h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                        @onclick="CloseModal"></button>
             </div>
             <div class="modal-body">
-                <EditForm Model="@this" OnValidSubmit="HandleSubmit">
+                <p>@Description</p>
+                <EditForm Model="@room" OnValidSubmit="HandleSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
                     <div class="mb-3">
-                        <label for="recipient-name" class="col-form-label">Recipient:</label>
-                        <InputText id="recipient-name" class="form-control" @bind-Value="Recipient" />
+                        <label for="room-name" class="col-form-label">Name:</label>
+                        <InputText id="room-name" class="form-control" @bind-Value="room.Name" />
+                        <ValidationMessage For="@(() => room.Name)" />
                     </div>
                     <div class="mb-3">
-                        <label for="message-text" class="col-form-label">Message:</label>
-                        <InputTextArea id="message-text" class="form-control" @bind-Value="Message" />
+                        <label for="description-text" class="col-form-label">Description:</label>
+                        <InputTextArea id="description-text" class="form-control" @bind-Value="room.Description" />
                     </div>
-                    <button type="submit" class="btn btn-primary">Send message</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                            @onclick="CloseModal">
+                        Close
+                    </button>
                 </EditForm>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
             </div>
         </div>
     </div>
 </div>
 
 @code {
-    [Parameter] public string ModalId { get; set; } = "exampleModal";
-    [Parameter] public string ModalLabelId { get; set; } = "Label";
-    [Parameter] public string Title { get; set; } = "New message";
-    [Parameter] public EventCallback<(string Recipient, string Message)> OnSubmit { get; set; }
+    [Parameter] public string Title { get; set; } = "New title";
+    [Parameter] public string Description { get; set; } = "New description";
+    [Parameter] public EventCallback<Room> OnSubmit { get; set; }
 
-    public string Recipient { get; set; } = "";
-    public string Message { get; set; } = "";
+    private Room room = new Room();
 
     private ElementReference ModalElement;
     private bool _isRendered = false;
@@ -71,8 +81,12 @@
     {
         if (OnSubmit.HasDelegate)
         {
-            await OnSubmit.InvokeAsync((Recipient, Message));
+            await OnSubmit.InvokeAsync(room);
         }
         await CloseModal();
+
+        // Reset form for next time
+        room = new Room();
+        StateHasChanged();
     }
 }

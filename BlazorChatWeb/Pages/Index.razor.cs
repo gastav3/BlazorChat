@@ -1,14 +1,13 @@
-﻿using BlazorChatShared.Models.Models;
-using BlazorChatShared.Parameters;
+﻿using AutoMapper;
+using BlazorChatShared.Constants;
+using BlazorChatShared.Models.Models;
 using BlazorChatWeb.Hub;
-using BlazorChatWeb.StateServices;
 using BlazorChatWeb.WebServices;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
 
 namespace BlazorChatWeb.Pages;
 
-public partial class Index : ComponentBase
+public partial class Index : ComponentBase, IDisposable
 {
     [CascadingParameter]
     public Room? SelectedRoom { get; set; } = default!;
@@ -17,37 +16,67 @@ public partial class Index : ComponentBase
     private NavigationManager Navigation { get; set; } = default!;
 
     [Inject]
-    private IRoomState _roomState { get; set; } = default!;
+    private IMapper _mapper { get; set; } = default!;
 
     [Inject]
     private IChatRoomWebService _chatRoomWebService { get; set; } = default!;
 
+    [Inject]
+    private IChatHubService chatHubService { get; set; } = default!;
+    private Func<Room, Task>? _roomReceivedHandler;
     private List<Room> rooms = [];
 
-    private string newRoomName = string.Empty;
+    protected override async Task OnParametersSetAsync()
+    {
+        await chatHubService.RequestUpdate(ChatConstants.MainRoomId.ToString());
+        await base.OnParametersSetAsync();
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        rooms = await _chatRoomWebService.GetAllRoomsAsync();
+        rooms = await _chatRoomWebService.GetAllRooms();
+        await chatHubService.StartConnection("https://localhost:7199/chathub");
+
+        _roomReceivedHandler = async (updatedRoom) =>
+        {
+            var existingRoom = rooms.FirstOrDefault(x => x.Id == updatedRoom.Id);
+            if (existingRoom != null)
+            {
+                existingRoom.Connections = updatedRoom.Connections;
+                existingRoom.Description = updatedRoom.Description;
+
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+
+            rooms.Add(updatedRoom);
+            await InvokeAsync(StateHasChanged);
+        };
+
+        chatHubService.OnRoomReceived += _roomReceivedHandler;
     }
 
-    private async Task JoinRoom(string id)
+    private int GetTotalConnectionCount()
+    {
+        var indexRoom = rooms.FirstOrDefault(x => x.Id == ChatConstants.MainRoomId.ToString());
+        return indexRoom?.Connections.Count ?? 0;
+    }
+
+    private void JoinRoom(string id)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
             throw new ArgumentException("Room ID cannot be null or empty.", nameof(id));
         }
-        _roomState.SelectedRoom = await _chatRoomWebService.GetRoomByIdAsync(id);
+
         Navigation.NavigateTo($"/chat/{id}");
     }
 
-    private async Task CreateRoom()
+    public void Dispose()
     {
-        var newRoomParameter = new CreateRoomParameter
+        if (_roomReceivedHandler != null)
         {
-            Name = newRoomName
-        };
-
-        await _chatRoomWebService.CreateRoomAsync(newRoomParameter);
+            chatHubService.OnRoomReceived -= _roomReceivedHandler;
+        }
     }
 }

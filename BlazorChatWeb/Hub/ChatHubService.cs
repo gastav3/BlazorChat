@@ -9,12 +9,20 @@ public class ChatHubService : IChatHubService, IAsyncDisposable
     public HubConnection? Connection { get; private set; }
 
     public event Func<ChatMessage, Task>? OnMessageReceived;
+    public event Func<Room, Task>? OnRoomReceived;
 
     public async Task SendMessage(ChatMessage msg)
     {
         if (Connection != null && Connection.State == HubConnectionState.Connected)
         {
             await Connection.SendAsync("SendMessage", msg);
+        }
+    }
+    public async Task RequestUpdate(string roomId)
+    {
+        if (Connection != null && Connection.State == HubConnectionState.Connected)
+        {
+            await Connection.InvokeAsync("UpdateRoom", roomId);
         }
     }
 
@@ -37,7 +45,6 @@ public class ChatHubService : IChatHubService, IAsyncDisposable
                 .WithAutomaticReconnect()
                 .Build();
 
-            // Hook up handlers 
             RegisterHubHandlers();
 
             await Connection.StartAsync();
@@ -49,7 +56,17 @@ public class ChatHubService : IChatHubService, IAsyncDisposable
         Connection?.On<ChatMessage>("ReceiveMessage", async (msg) =>
         {
             if (OnMessageReceived != null)
+            {
                 await OnMessageReceived.Invoke(msg);
+            }
+        });
+
+        Connection?.On<Room>("ReceiveUpdatedRoom", async (room) =>
+        {
+            if (OnRoomReceived != null)
+            {
+                await OnRoomReceived.Invoke(room);
+            }
         });
     }
     public async ValueTask DisposeAsync()

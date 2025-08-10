@@ -4,7 +4,10 @@
     @if (LoadedRoom != null)
     {
         <div class="chat-container">
-            <h3>@(LoadedRoom.Name ?? "Invalid room name")</h3>
+            <h3>
+                @(LoadedRoom.Name ?? "Invalid room name")
+            </h3>
+            <h5>Users in room: (@(LoadedRoom.Connections != null ? LoadedRoom.Connections.Count().ToString() : "0"))</h5>
             <input @bind="message.User" placeholder="Your name" class="chat-input" />
 
             <div @ref="messageListDiv" class="message-list" @onscroll="OnScrollAsync">

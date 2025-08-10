@@ -1,14 +1,16 @@
 ﻿using BlazorChatShared.Models.Models;
 using BlazorChatShared.Parameters;
+using BlazorChatWeb.Components;
 using BlazorChatWeb.Hub;
 using BlazorChatWeb.StateServices;
 using BlazorChatWeb.WebServices;
+using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.Components.Routing;
 
 namespace BlazorChatWeb.Layout;
 
-public partial class NavMenu : ComponentBase
+public partial class NavMenu : ComponentBase, IDisposable
 {
     [CascadingParameter]
     public Room? SelectedRoom { get; set; } = default!;
@@ -17,26 +19,94 @@ public partial class NavMenu : ComponentBase
     private NavigationManager Navigation { get; set; } = default!;
 
     [Inject]
-    private IChatRoomWebService _chatRoomWebService { get; set; } = default!;
+    private IChatRoomWebService ChatRoomWebService { get; set; } = default!;
 
     [Inject]
-    private IRoomState _roomState { get; set; } = default!;
+    private IRoomState RoomState { get; set; } = default!;
 
     [Inject]
     private IChatHubService chatHubService { get; set; } = default!;
-    private List<Room> rooms = [];
 
-    private string newRoomName = string.Empty;
+    [Inject]
+    private ILocalStorageService LocalStorage { get; set; } = default!;
+
+    private const string VisitedRoomsKey = "visitedRooms";
+    private List<Room> visitedRooms = [];
+    private Action? roomStateChangedHandler;
+
     private bool collapseNavMenu = true;
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private CreateRoomModalComponent? Modal;
+
+    public async Task ShowModal()
+    {
+        if (Modal != null)
+        {
+            await Modal.ShowAsync();
+        }
+    }
+
+    private async Task OnRoomCreateModalSubmit(Room newRoom)
+    {
+        if (newRoom == null || string.IsNullOrWhiteSpace(newRoom.Name))
+        {
+            return;
+        }
+
+        var newRoomParameter = new CreateRoomParameter
+        {
+            Name = newRoom.Name,
+            Description = newRoom.Description
+        };
+
+        var createdRoom = await ChatRoomWebService.CreateRoom(newRoomParameter);
+        if (createdRoom != null)
+        {
+            JoinRoom(createdRoom.Id);
+        }
+    }
+
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var uri = new Uri(e.Location);
+        if (!uri.AbsolutePath.StartsWith("/chat"))
+        {
+            RoomState.SelectedRoom = null;
+        }
+        _ = LoadVisitedRoomsAsync();
+    }
+
+    private async Task LoadVisitedRoomsAsync()
+    {
+        var allRooms = await ChatRoomWebService.GetAllRooms();
+
+        var storedRooms = await LocalStorage.GetItemAsync<List<Room>>(VisitedRoomsKey) ?? new List<Room>();
+
+        visitedRooms = storedRooms
+            .Where(sr => allRooms.Any(ar => ar.Id == sr.Id))
+            .ToList();
+
+        await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        rooms = await _chatRoomWebService.GetAllRoomsAsync();
         await chatHubService.StartConnection("https://localhost:7199/chathub");
+        await LoadVisitedRoomsAsync();
+
+        roomStateChangedHandler = async () =>
+        {
+            SelectedRoom = RoomState.SelectedRoom;
+            await LoadVisitedRoomsAsync();
+            await InvokeAsync(StateHasChanged);
+        };
+
+        RoomState.OnChange += roomStateChangedHandler;
+        Navigation.LocationChanged += OnLocationChanged;
     }
 
-    private async Task JoinRoom(string id)
+    private void JoinRoom(string id)
     {
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -48,25 +118,20 @@ public partial class NavMenu : ComponentBase
             throw new InvalidOperationException("SignalR connection has not been initialized.");
         }
 
-
-        _roomState.SelectedRoom = await _chatRoomWebService.GetRoomByIdAsync(id);
-
         Navigation.NavigateTo($"/chat/{id}");
-
-    }
-
-    private async Task CreateRoom()
-    {
-        var newRoomParameter = new CreateRoomParameter
-        {
-            Name = newRoomName
-        };
-
-        await _chatRoomWebService.CreateRoomAsync(newRoomParameter);
     }
 
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    public void Dispose()
+    {
+        if (roomStateChangedHandler != null)
+        {
+            RoomState.OnChange -= roomStateChangedHandler;
+        }
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }

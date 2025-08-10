@@ -2,6 +2,7 @@ using BlazorChatAPI.Data;
 using BlazorChatAPI.Hubs;
 using BlazorChatAPI.Repositories;
 using BlazorChatAPI.Services;
+using BlazorChatAPI.State;
 using BlazorChatShared.Mapper;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+builder.Services.AddSingleton<IHubApi, HubApi>();
+builder.Services.AddSingleton<IRoomState, RoomState>();
+
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IRoomService, RoomService>();
@@ -47,6 +52,12 @@ builder.Services.AddControllers()
 );
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    BaseData.Seed(db);
+}
 
 app.MapHub<ChatHub>("/chathub");
 

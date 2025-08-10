@@ -1,14 +1,12 @@
 ﻿using BlazorChatShared.Models.Models;
-using BlazorChatShared.Parameters;
 using BlazorChatWeb.Hub;
+using BlazorChatWeb.StateServices;
 using BlazorChatWeb.WebServices;
+using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace BlazorChatWeb.Pages;
 
@@ -24,10 +22,17 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
     private IChatRoomWebService _chatRoomWebService { get; set; } = default!;
 
     [Inject]
+    private IRoomState _roomState { get; set; } = default!;
+
+    [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
 
+    [Inject]
+    private ILocalStorageService LocalStorage { get; set; } = default!;
+    private const string VisitedRoomsKey = "visitedRooms";
+
     private ChatMessage message = default!;
-    private List<ChatMessage> messages = new();
+    private List<ChatMessage> messages = [];
 
     private ElementReference messageListDiv;
 
@@ -38,25 +43,41 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
     private bool _hasMoreMessages = true;
     private bool _isLoading = false;
     private bool _shouldScrollToBottom = true;
+
     private Func<ChatMessage, Task>? _messageReceivedHandler;
+    private Func<Room, Task>? _roomReceivedHandler;
 
     private int _scrollPos = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        await chatHubService.StartConnection("https://localhost:7199/chathub");
-
         _messageReceivedHandler = async (msg) =>
         {
             if (msg.GroupId != Id || messages.Any(x => x.Id == msg.Id))
+            {
                 return;
+            }
 
             messages.Add(msg);
             await InvokeAsync(StateHasChanged);
             await DoScrollToBottom();
-        };  
+        };
 
         chatHubService.OnMessageReceived += _messageReceivedHandler;
+
+        _roomReceivedHandler = async (updatedRoom) =>
+        {
+            if (LoadedRoom != null && LoadedRoom.Id == updatedRoom.Id)
+            {
+                LoadedRoom.Connections = updatedRoom.Connections;
+                LoadedRoom.Name = updatedRoom.Name;
+
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+        };
+
+        chatHubService.OnRoomReceived += _roomReceivedHandler;
 
         await LoadChatMessages();
 
@@ -67,13 +88,8 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
     protected override async Task OnParametersSetAsync()
     {
         if (string.IsNullOrWhiteSpace(Id))
-            throw new ArgumentException("Room ID cannot be null or empty.", nameof(Id));
-
-        await chatHubService.StartConnection("https://localhost:7199/chathub");
-
-        if (chatHubService.Connection != null)
         {
-            await chatHubService.Connection.InvokeAsync("JoinRoom", Id);
+            throw new ArgumentException("Room ID cannot be null or empty.", nameof(Id));
         }
 
         messages.Clear();
@@ -82,20 +98,29 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
         _isLoading = false;
         _shouldScrollToBottom = true;
 
-        LoadedRoom = await _chatRoomWebService.GetRoomByIdAsync(Id)
-            ?? throw new InvalidOperationException($"Room with Id '{Id}' was not found.");
+        LoadedRoom = await _chatRoomWebService.GetRoomById(Id) ?? throw new InvalidOperationException($"Room with Id '{Id}' was not found.");
+        _roomState.SelectedRoom = LoadedRoom;
 
         message = new ChatMessage
         {
             GroupId = Id,
-            User = "test user", // Replace with your auth user
+            User = "test user", // Replace
             Message = string.Empty
         };
+
+        await chatHubService.StartConnection("https://localhost:7199/chathub");
+
+        if (chatHubService.Connection != null)
+        {
+            await chatHubService.Connection.InvokeAsync("JoinRoom", Id);
+        }
 
         await LoadChatMessages();
 
         await InvokeAsync(StateHasChanged);
         await DoScrollToBottom();
+
+        await SaveVisitedRoomAsync(LoadedRoom);
     }
 
     private async Task DoScrollToBottom()
@@ -121,7 +146,6 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
             await LoadChatMessages();
         }
     }
-
     private async Task LoadChatMessages()
     {
         var prevScrollHeight = await JSRuntime.InvokeAsync<int>("getScrollHeight", messageListDiv);
@@ -148,7 +172,6 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
         await ScrollToPosition(scrollDifference);
     }
 
-
     private async Task ClickSend()
     {
         if (!string.IsNullOrWhiteSpace(message.Message))
@@ -157,7 +180,6 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
             message.Message = string.Empty;
         }
     }
-
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter" && !e.ShiftKey)
@@ -165,7 +187,6 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
             await ClickSend();
         }
     }
-
     private async Task<bool> IsAtBottomAsync()
     {
         return await JSRuntime.InvokeAsync<bool>("isScrolledToBottom", messageListDiv);
@@ -181,12 +202,29 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
         await JSRuntime.InvokeVoidAsync("scrollToPosition", messageListDiv, pos);
     }
 
+    private async Task SaveVisitedRoomAsync(Room room)
+    {
+        var storedRooms = await LocalStorage.GetItemAsync<List<Room>>(VisitedRoomsKey) ?? new List<Room>();
 
+        storedRooms.RemoveAll(r => r.Id == room.Id);
+        storedRooms.Insert(0, room);
+
+        //Keep only latest 10
+        if (storedRooms.Count > 10)
+            storedRooms = storedRooms.Take(10).ToList();
+
+        await LocalStorage.SetItemAsync(VisitedRoomsKey, storedRooms);
+    }
     public async ValueTask DisposeAsync()
     {
         if (_messageReceivedHandler != null)
         {
             chatHubService.OnMessageReceived -= _messageReceivedHandler;
+        }
+
+        if (_roomReceivedHandler != null)
+        {
+            chatHubService.OnRoomReceived -= _roomReceivedHandler;
         }
 
         if (chatHubService?.Connection != null)

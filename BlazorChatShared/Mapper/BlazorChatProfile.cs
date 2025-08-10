@@ -13,6 +13,6 @@ public class BlazorChatProfile : Profile
             .ReverseMap();
 
         CreateMap<ChatMessageEntity, ChatMessage>()
-    .ReverseMap();
+            .ReverseMap();
     }
 }
