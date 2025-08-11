@@ -110,6 +110,7 @@ public class ChatHub : Hub<IChatHub>
         // Timestamp is set by server-side service
         if (newMsg != null && newMsg.Timestamp != default)
         {
+            msg.Id = newMsg.Id.ToString();
             msg.Timestamp = newMsg.Timestamp;
             await Clients.Group(msg.GroupId).ReceiveMessage(msg);
         }

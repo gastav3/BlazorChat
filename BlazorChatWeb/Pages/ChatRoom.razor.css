@@ -1,0 +1,14 @@
+﻿.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+}
+
+.chat-message-container {
+    background-color: #f8f9fa;
+    flex-grow: 1;
+}
+
+.no-resize {
+    resize: none;
+}

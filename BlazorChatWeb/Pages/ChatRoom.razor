@@ -1,38 +1,67 @@
 ﻿@page "/chat/{Id}"
 
-<div class="chat-page">
+<div class="container py-4">
     @if (LoadedRoom != null)
     {
-        <div class="chat-container">
-            <h3>
-                @(LoadedRoom.Name ?? "Invalid room name")
-            </h3>
-            <h5>Users in room: (@(LoadedRoom.Connections != null ? LoadedRoom.Connections.Count().ToString() : "0"))</h5>
-            <input @bind="message.User" placeholder="Your name" class="chat-input" />
-
-            <div @ref="messageListDiv" class="message-list" @onscroll="OnScrollAsync">
-                <ul>
-                    @foreach (var msg in messages.OrderBy(x => x.Timestamp))
-                    {
-                        <li class="message-item">
-                            <b>@msg.User</b>: @msg.Message
-                            <span class="message-timestamp">
-                                @(msg.Timestamp.ToLocalTime().ToString("HH:mm"))
-                            </span>
-                        </li>
-                    }
-                </ul>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">@(LoadedRoom.Name ?? "Invalid room name")</h3>
+                <small class="text-muted">Users in room: @(LoadedRoom.Connections?.Count() ?? 0)</small>
             </div>
 
-            <div class="message-controls">
-                <textarea @bind="message.Message"
-                          @onkeydown="HandleKeyPress"
-                          placeholder="Type your message..."
-                          rows="2"
-                          class="message-textarea"></textarea>
+            <EditForm Model="@message" OnValidSubmit="ClickSend">
+                <DataAnnotationsValidator />
 
-                <button @onclick="ClickSend" class="send-button">Send</button>
-            </div>
+                <div class="card-body d-flex flex-column chat-container">
+                    <div class="row mb-3">
+                        <div class="col-4">
+                            <InputText @bind-Value="message.User"
+                                       placeholder="Your name"
+                                       class="form-control" />
+                            <ValidationMessage For="@(() => message.User)" />
+                        </div>
+                    </div>
+
+
+                    <div @ref="messageListDiv"
+                         class="border rounded p-3 mb-3 chat-message-container overflow-auto"
+                         @onscroll="OnScrollAsync">
+                        <ul class="list-unstyled mb-0">
+                            @if (messages.Count == 0)
+                            {
+                                <li class="text-center text-muted fst-italic">No messages yet..</li>
+                            }
+                            else
+                            {
+                                @foreach (var msg in messages.OrderBy(x => x.Timestamp))
+                                {
+                                    <li class="mb-2">
+                                        <strong>@msg.User</strong>: @msg.Message
+                                        <span class="text-muted small float-end">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    </div>
+
+                    <div class="input-group">
+                        <InputTextArea @bind-Value="message.Message"
+                                       placeholder="Type your message..."
+                                       rows="2"
+                                       class="form-control"
+                                       @onkeydown="HandleKeyPress" />
+                        <button type="submit" class="btn btn-primary">Send</button>
+                    </div>
+                    <ValidationMessage For="@(() => message.Message)" />
+                </div>
+            </EditForm>
+        </div>
+    }
+    else
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3">Loading room...</p>
         </div>
     }
 </div>

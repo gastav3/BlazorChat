@@ -104,7 +104,7 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
         message = new ChatMessage
         {
             GroupId = Id,
-            User = "test user", // Replace
+            User = "",
             Message = string.Empty
         };
 
