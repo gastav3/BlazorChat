@@ -17,17 +17,23 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// CORS: Allow Blazor WASM running on https://localhost:7081
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins")
+    .Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost", policy =>
-    {
-        policy.WithOrigins("https://localhost:7081")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials(); // Only if you're using auth like SignalR/cookies
-    });
+    options.AddPolicy("AllowBlazor",
+        policy =>
+        {
+            policy
+                .WithOrigins("https://localhost:8081", "http://localhost:8081") // WASM URL
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
 });
+
 
 builder.Services.AddSignalR();
 
@@ -69,9 +75,9 @@ if (app.Environment.IsDevelopment())
 }
 
 // Enable CORS before routing or authorization
-app.UseCors("AllowLocalhost");
+app.UseCors("AllowBlazor");
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection(); // dont use for docker now
 app.UseAuthorization();
 app.MapControllers();
 

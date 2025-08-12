@@ -1,0 +1,36 @@
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8080:80"
+    environment:
+      ASPNETCORE_URLS: http://+:80
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=blazorchat;Username=blazoruser;Password=blazorpass"
+    depends_on:
+      - postgres
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "8081:80"
+
+  postgres:
+    image: postgres:16
+    container_name: blazorchat_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: blazoruser
+      POSTGRES_PASSWORD: blazorpass
+      POSTGRES_DB: blazorchat
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

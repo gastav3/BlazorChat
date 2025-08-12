@@ -1,0 +1,16 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY BlazorChat.sln ./
+COPY BlazorChatAPI/BlazorChatAPI.csproj BlazorChatAPI/
+COPY BlazorChatShared/BlazorChatShared.csproj BlazorChatShared/
+RUN dotnet restore "BlazorChatAPI/BlazorChatAPI.csproj"
+
+COPY . .
+RUN dotnet publish BlazorChatAPI/BlazorChatAPI.csproj -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 80
+ENTRYPOINT ["dotnet", "BlazorChatAPI.dll"]

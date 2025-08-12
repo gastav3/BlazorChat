@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using BlazorChatShared.Constants;
+﻿using BlazorChatShared.Constants;
 using BlazorChatShared.Models.Models;
 using BlazorChatWeb.Hub;
 using BlazorChatWeb.WebServices;
@@ -14,9 +13,6 @@ public partial class Index : ComponentBase, IDisposable
 
     [Inject]
     private NavigationManager Navigation { get; set; } = default!;
-
-    [Inject]
-    private IMapper _mapper { get; set; } = default!;
 
     [Inject]
     private IChatRoomWebService _chatRoomWebService { get; set; } = default!;
@@ -35,7 +31,7 @@ public partial class Index : ComponentBase, IDisposable
     protected override async Task OnInitializedAsync()
     {
         rooms = await _chatRoomWebService.GetAllRooms();
-        await chatHubService.StartConnection("https://localhost:7199/chathub");
+        await chatHubService.StartConnection("http://localhost:8080/chathub");
 
         _roomReceivedHandler = async (updatedRoom) =>
         {

@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using BlazorChatShared.Models.Entities;
 using BlazorChatShared.Models.Models;
-using BlazorChatShared.Parameters;
 
 namespace BlazorChatShared.Mapper;
 

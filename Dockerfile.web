@@ -1,0 +1,16 @@
+# Build WASM
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+COPY BlazorChat.sln ./
+COPY BlazorChatWeb/BlazorChatWeb.csproj BlazorChatWeb/
+COPY BlazorChatShared/BlazorChatShared.csproj BlazorChatShared/
+RUN dotnet restore "BlazorChatWeb/BlazorChatWeb.csproj"
+
+COPY . .
+RUN dotnet publish BlazorChatWeb/BlazorChatWeb.csproj -c Release -o /app/build
+
+# Serve via Nginx
+FROM nginx:alpine AS final
+COPY --from=build /app/build/wwwroot /usr/share/nginx/html
+EXPOSE 80

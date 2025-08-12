@@ -108,7 +108,7 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
             Message = string.Empty
         };
 
-        await chatHubService.StartConnection("https://localhost:7199/chathub");
+        await chatHubService.StartConnection("http://localhost:8080/chathub");
 
         if (chatHubService.Connection != null)
         {

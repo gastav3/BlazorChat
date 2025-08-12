@@ -92,7 +92,7 @@ public partial class NavMenu : ComponentBase, IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        await chatHubService.StartConnection("https://localhost:7199/chathub");
+        await chatHubService.StartConnection("http://localhost:8080/chathub");
         await LoadVisitedRoomsAsync();
 
         roomStateChangedHandler = async () =>
