@@ -23,6 +23,14 @@ public partial class CreateRoomModalComponent : ComponentBase
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("document.body.appendChild", ModalElement);
+        }
+    }
+
     public async Task ShowAsync()
     {
         if (_isRendered)
