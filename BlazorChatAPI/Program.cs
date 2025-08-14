@@ -23,17 +23,15 @@ var allowedOrigins = builder.Configuration
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowBlazor",
-        policy =>
-        {
-            policy
-                .WithOrigins("https://localhost:8081", "http://localhost:8081") // WASM URL
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        });
+    options.AddPolicy("AllowBlazor", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
 });
-
 
 builder.Services.AddSignalR();
 
@@ -67,14 +65,12 @@ using (var scope = app.Services.CreateScope())
 
 app.MapHub<ChatHub>("/chathub");
 
-// Enable Swagger in development
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Enable CORS before routing or authorization
 app.UseCors("AllowBlazor");
 
 //app.UseHttpsRedirection(); // dont use for docker now

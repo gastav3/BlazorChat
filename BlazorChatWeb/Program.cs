@@ -10,11 +10,19 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"];
 var hubUrl = builder.Configuration["SignalRHubUrl"];
+
 builder.Services.AddScoped(sp => new HttpClient
 {
     BaseAddress = new Uri(apiBaseUrl!)
+});
+
+builder.Services.AddSingleton(new AppSettings
+{
+    ApiBaseUrl = apiBaseUrl!,
+    HubUrl = hubUrl!
 });
 
 

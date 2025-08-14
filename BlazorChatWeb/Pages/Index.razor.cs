@@ -1,6 +1,7 @@
 ﻿using BlazorChatShared.Constants;
 using BlazorChatShared.Models.Models;
 using BlazorChatWeb.Hub;
+using BlazorChatWeb.StateServices;
 using BlazorChatWeb.WebServices;
 using Microsoft.AspNetCore.Components;
 
@@ -12,26 +13,30 @@ public partial class Index : ComponentBase, IDisposable
     public Room? SelectedRoom { get; set; } = default!;
 
     [Inject]
+    private AppSettings AppSettings { get; set; } = default!;
+
+    [Inject]
     private NavigationManager Navigation { get; set; } = default!;
 
     [Inject]
-    private IChatRoomWebService _chatRoomWebService { get; set; } = default!;
+    private IChatRoomWebService ChatRoomWebService { get; set; } = default!;
 
     [Inject]
-    private IChatHubService chatHubService { get; set; } = default!;
+    private IChatHubService ChatHubService { get; set; } = default!;
+
     private Func<Room, Task>? _roomReceivedHandler;
     private List<Room> rooms = [];
 
     protected override async Task OnParametersSetAsync()
     {
-        await chatHubService.RequestUpdate(ChatConstants.MainRoomId.ToString());
+        await ChatHubService.RequestUpdate(ChatConstants.MainRoomId.ToString());
         await base.OnParametersSetAsync();
     }
 
     protected override async Task OnInitializedAsync()
     {
-        rooms = await _chatRoomWebService.GetAllRooms();
-        await chatHubService.StartConnection("http://localhost:8080/chathub");
+        rooms = await ChatRoomWebService.GetAllRooms();
+        await ChatHubService.StartConnection(AppSettings.HubUrl);
 
         _roomReceivedHandler = async (updatedRoom) =>
         {
@@ -49,7 +54,7 @@ public partial class Index : ComponentBase, IDisposable
             await InvokeAsync(StateHasChanged);
         };
 
-        chatHubService.OnRoomReceived += _roomReceivedHandler;
+        ChatHubService.OnRoomReceived += _roomReceivedHandler;
     }
 
     private int GetTotalConnectionCount()
@@ -72,7 +77,7 @@ public partial class Index : ComponentBase, IDisposable
     {
         if (_roomReceivedHandler != null)
         {
-            chatHubService.OnRoomReceived -= _roomReceivedHandler;
+            ChatHubService.OnRoomReceived -= _roomReceivedHandler;
         }
     }
 }

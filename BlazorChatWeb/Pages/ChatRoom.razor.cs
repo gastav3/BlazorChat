@@ -16,13 +16,16 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
     public string Id { get; set; } = default!;
 
     [Inject]
-    private IChatHubService chatHubService { get; set; } = default!;
+    private IChatHubService ChatHubService { get; set; } = default!;
 
     [Inject]
-    private IChatRoomWebService _chatRoomWebService { get; set; } = default!;
+    private IChatRoomWebService ChatRoomWebService { get; set; } = default!;
 
     [Inject]
-    private IRoomState _roomState { get; set; } = default!;
+    private IRoomState RoomState { get; set; } = default!;
+
+    [Inject]
+    private AppSettings AppSettings { get; set; } = default!;
 
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
@@ -63,7 +66,7 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
             await DoScrollToBottom();
         };
 
-        chatHubService.OnMessageReceived += _messageReceivedHandler;
+        ChatHubService.OnMessageReceived += _messageReceivedHandler;
 
         _roomReceivedHandler = async (updatedRoom) =>
         {
@@ -77,7 +80,7 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
             }
         };
 
-        chatHubService.OnRoomReceived += _roomReceivedHandler;
+        ChatHubService.OnRoomReceived += _roomReceivedHandler;
 
         await LoadChatMessages();
 
@@ -98,8 +101,8 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
         _isLoading = false;
         _shouldScrollToBottom = true;
 
-        LoadedRoom = await _chatRoomWebService.GetRoomById(Id) ?? throw new InvalidOperationException($"Room with Id '{Id}' was not found.");
-        _roomState.SelectedRoom = LoadedRoom;
+        LoadedRoom = await ChatRoomWebService.GetRoomById(Id) ?? throw new InvalidOperationException($"Room with Id '{Id}' was not found.");
+        RoomState.SelectedRoom = LoadedRoom;
 
         message = new ChatMessage
         {
@@ -108,11 +111,11 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
             Message = string.Empty
         };
 
-        await chatHubService.StartConnection("http://localhost:8080/chathub");
+        await ChatHubService.StartConnection(AppSettings.HubUrl);
 
-        if (chatHubService.Connection != null)
+        if (ChatHubService.Connection != null)
         {
-            await chatHubService.Connection.InvokeAsync("JoinRoom", Id);
+            await ChatHubService.Connection.InvokeAsync("JoinRoom", Id);
         }
 
         await LoadChatMessages();
@@ -150,7 +153,7 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
     {
         var prevScrollHeight = await JSRuntime.InvokeAsync<int>("getScrollHeight", messageListDiv);
 
-        var result = await chatHubService.LoadMessages(Id, _currentPage, _pageSize);
+        var result = await ChatHubService.LoadMessages(Id, _currentPage, _pageSize);
 
         if (result?.Messages != null && result.Messages.Any())
         {
@@ -176,7 +179,7 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
     {
         if (!string.IsNullOrWhiteSpace(message.Message))
         {
-            await chatHubService.SendMessage(message);
+            await ChatHubService.SendMessage(message);
             message.Message = string.Empty;
         }
     }
@@ -219,17 +222,17 @@ public partial class ChatRoom : ComponentBase, IAsyncDisposable
     {
         if (_messageReceivedHandler != null)
         {
-            chatHubService.OnMessageReceived -= _messageReceivedHandler;
+            ChatHubService.OnMessageReceived -= _messageReceivedHandler;
         }
 
         if (_roomReceivedHandler != null)
         {
-            chatHubService.OnRoomReceived -= _roomReceivedHandler;
+            ChatHubService.OnRoomReceived -= _roomReceivedHandler;
         }
 
-        if (chatHubService?.Connection != null)
+        if (ChatHubService?.Connection != null)
         {
-            await chatHubService.Connection.InvokeAsync("LeaveRoom", Id);
+            await ChatHubService.Connection.InvokeAsync("LeaveRoom", Id);
         }
     }
 }

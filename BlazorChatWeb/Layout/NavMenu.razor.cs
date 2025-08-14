@@ -25,7 +25,10 @@ public partial class NavMenu : ComponentBase, IDisposable
     private IRoomState RoomState { get; set; } = default!;
 
     [Inject]
-    private IChatHubService chatHubService { get; set; } = default!;
+    private AppSettings AppSettings { get; set; } = default!;
+
+    [Inject]
+    private IChatHubService ChatHubService { get; set; } = default!;
 
     [Inject]
     private ILocalStorageService LocalStorage { get; set; } = default!;
@@ -92,7 +95,7 @@ public partial class NavMenu : ComponentBase, IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        await chatHubService.StartConnection("http://localhost:8080/chathub");
+        await ChatHubService.StartConnection(AppSettings.HubUrl);
         await LoadVisitedRoomsAsync();
 
         roomStateChangedHandler = async () =>
@@ -113,7 +116,7 @@ public partial class NavMenu : ComponentBase, IDisposable
             throw new ArgumentException("Room ID cannot be null or empty.", nameof(id));
         }
 
-        if (chatHubService.Connection == null)
+        if (ChatHubService.Connection == null)
         {
             throw new InvalidOperationException("SignalR connection has not been initialized.");
         }
