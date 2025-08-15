@@ -32,3 +32,9 @@ Instant Messaging – Real-time message updates using SignalR.
 Persistent History – Messages stored in a database with EF Core.  
 Responsive UI – Modern, mobile-friendly design with MudBlazor.  
 Clean Code – Shared models, dependency injection, async programming, and scalable architecture.  
+
+## Images
+
+<img width="1917" height="935" alt="image" src="https://github.com/user-attachments/assets/574d373c-4d61-4384-b845-03d5484df64a" />
+<img width="1349" height="556" alt="image" src="https://github.com/user-attachments/assets/85b94c88-df36-46b2-b8a1-ec78ee3cd19a" />
+<img width="1882" height="900" alt="image" src="https://github.com/user-attachments/assets/77a02404-dbb7-413f-ab6a-e5b718cf85a0" />
