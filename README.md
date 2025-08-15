@@ -12,8 +12,8 @@ Blazor WebAssembly – Client-side UI in C#, running in the browser via WebAssem
 ASP.NET Core – Backend services, hosting the client, handling APIs, and SignalR hubs.  
 SignalR – Real-time messaging over WebSockets.  
 Entity Framework Core – Database access and message persistence.  
-xUnit
-Docker
+xUnit  
+Docker  
 
 ## Architecture
 
@@ -34,7 +34,7 @@ Instant Messaging – Real-time message updates using SignalR.
 Persistent History – Messages stored in a database with EF Core.  
 Responsive UI – Modern, mobile-friendly design with MudBlazor.  
 Clean Code – Shared models, dependency injection, async programming, and scalable architecture.  
-Testing with xUnit
+Testing with xUnit  
 Easy deployment with docker compose  
 
 ## Images
